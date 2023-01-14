@@ -4,6 +4,7 @@ set -euxo pipefail
 
 disk="$1"
 rootfs="$2"
+adm="$3"
 
 sgdisk -Z "$disk" \
   -n 1::+300MiB -c 1:efi -t 1:ef00 \
@@ -16,5 +17,7 @@ mount /dev/disk/by-partlabel/root /mnt
 mount --mkdir /dev/disk/by-partlabel/efi /mnt/boot
 curl -o /tmp/rootfs.tar.xz "$rootfs"
 pv /tmp/rootfs.tar.xz | bsdtar -JxC /mnt
+arch-chroot /mnt /usr/sbin/useradd -mG adm "$adm" -s /bin/bash
+printf "$adm":"$adm" | arch-chroot /mnt /usr/sbin/chpasswd
 arch-chroot /mnt bootctl install
 umount -R /mnt
