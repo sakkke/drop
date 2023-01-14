@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+disk="$1"
+rootfs="$2"
+
+sgdisk -Z "$disk" \
+  -n 1::+300MiB -c 1:efi -t 1:ef00 \
+  -n 2:: -c 2:root -t 2:8304
+
+udevadm wait /dev/disk/by-partlabel/efi /dev/disk/by-partlabel/root
+mkfs.fat -F 32 /dev/disk/by-partlabel/efi
+mkfs.ext4 -F /dev/disk/by-partlabel/root
+mount /dev/disk/by-partlabel/root /mnt
+mount --mkdir /dev/disk/by-partlabel/efi /mnt/boot
+curl -o /tmp/rootfs.tar.xz "$rootfs"
+pv /tmp/rootfs.tar.xz | bsdtar -JxC /mnt
+arch-chroot /mnt bootctl install
+umount -R /mnt
