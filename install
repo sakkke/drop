@@ -5,6 +5,7 @@ set -euxo pipefail
 disk="$1"
 rootfs="$2"
 adm="$3"
+config="${4:-https://github.com/sakkke/drop-config-default}"
 
 sgdisk -Z "$disk" \
   -n 1::+300MiB -c 1:efi -t 1:ef00 \
@@ -20,4 +21,5 @@ pv /tmp/rootfs.tar.xz | bsdtar -JxC /mnt
 arch-chroot /mnt /usr/sbin/useradd -mG adm "$adm" -s /usr/bin/fish
 printf "$adm":"$adm" | arch-chroot /mnt /usr/sbin/chpasswd
 arch-chroot /mnt bootctl install
+arch-chroot /mnt dropctl-config-apply "$config" "$adm"
 umount -R /mnt
